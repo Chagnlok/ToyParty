@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Board : MonoBehaviour
 {
-    public int _iSize = 3;
+    int _iSize = 6;
     public Tile[] _tiles;
 
     GameObject[] _prefTiles;
@@ -38,7 +38,12 @@ public class Board : MonoBehaviour
     {
         _tiles = new Tile[_iSize * _iSize];
 
-        _prefTiles = Resources.LoadAll("Tiles") as GameObject[];
+        object[] temp = Resources.LoadAll("Tiles");
+        _prefTiles = new GameObject[temp.Length];
+        for ( int i  = 0; i < temp.Length; i ++)
+        {
+            _prefTiles[i] = temp[i] as GameObject;
+        }
 
         
 
@@ -46,12 +51,13 @@ public class Board : MonoBehaviour
         {
             for (int j = 0; j < _iSize; j++)
             {
-                Tile t0 = Instantiate<Tile>(_prefTiles[0].transform.GetComponent<Tile>());
+                int r = (int)Random.Range(0, _prefTiles.Length );
+                Tile t0 = Instantiate<Tile>(_prefTiles[r].transform.GetComponent<Tile>());
 
                 t0.transform.localScale = Vector3.one;
 
                 t0.transform.parent = this.transform;
-                Vector3 v = new Vector3( -0.2f + (5.0f/_iSize) * j, - 0.2f + (5.0f / _iSize) * i, 0.0f);
+                Vector3 v = new Vector3( -2.0f + (4.0f/(_iSize-1)) * j, 0.2f - (4.0f / (_iSize-1)) * i, 0.0f);
                 t0.transform.localPosition = v;
             }
         }
