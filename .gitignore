@@ -2,3 +2,5 @@
 library
 temp
 Unity.VSCode.Editor.csproj
+.vs
+obj
