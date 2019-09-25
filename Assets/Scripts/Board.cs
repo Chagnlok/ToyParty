@@ -7,6 +7,8 @@ public class Board : MonoBehaviour
     public int _iSize = 3;
     public Tile[] _tiles;
 
+    GameObject[] _prefTiles;
+
     //0 1 2
     //3 4 5
     //6 7 8
@@ -17,7 +19,7 @@ public class Board : MonoBehaviour
     // 4-5 +1
     // 4-6 +n-1
     // 4-7 +n
-
+          
 
     // Start is called before the first frame update
     void Start()
@@ -36,12 +38,22 @@ public class Board : MonoBehaviour
     {
         _tiles = new Tile[_iSize * _iSize];
 
-        GameObject prefTile = Resources.Load("Tiles/Fruit_Blue_1") as GameObject;
-        Tile t0 = Instantiate<Tile>(prefTile.transform.GetComponent<Tile>());
+        _prefTiles = Resources.LoadAll("Tiles") as GameObject[];
 
-        t0.transform.localScale = Vector3.one;
+        
 
-        t0.transform.parent = this.transform;
-        t0.transform.localPosition = Vector3.zero;
+        for ( int i = 0; i < _iSize; i ++)
+        {
+            for (int j = 0; j < _iSize; j++)
+            {
+                Tile t0 = Instantiate<Tile>(_prefTiles[0].transform.GetComponent<Tile>());
+
+                t0.transform.localScale = Vector3.one;
+
+                t0.transform.parent = this.transform;
+                Vector3 v = new Vector3( -0.2f + (5.0f/_iSize) * j, - 0.2f + (5.0f / _iSize) * i, 0.0f);
+                t0.transform.localPosition = v;
+            }
+        }
     }
 }
