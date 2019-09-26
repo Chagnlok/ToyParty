@@ -57,7 +57,7 @@ public class Tile : MonoBehaviour
         if (_idx < 0)
             return;
 
-        Debug.Log("OnMouseDown : " + _cur);
+        //Debug.Log("OnMouseDown : " + _cur);
 
         //_board.Pang(_cur);
         _board.OnTouchDown(_cur);
@@ -69,7 +69,7 @@ public class Tile : MonoBehaviour
         if (_idx < 0)
             return;
 
-        Debug.Log("OnMouseUp : " + _cur);
+        //Debug.Log("OnMouseUp : " + _cur);
         _board.OnTouchUp(_cur);
     }
 
@@ -78,7 +78,7 @@ public class Tile : MonoBehaviour
         if (_idx < 0)
             return;
 
-        Debug.Log("OnMouseExit : " + _cur);
+        //Debug.Log("OnMouseExit : " + _cur);
         _board.OnTouchExit(_cur);
     }
 
@@ -87,7 +87,7 @@ public class Tile : MonoBehaviour
         if (_idx < 0)
             return;
 
-        Debug.Log("OnMouseEnter : " + _cur);
+        //Debug.Log("OnMouseEnter : " + _cur);
         _board.OnTouchEnter(_cur);
     }
 
