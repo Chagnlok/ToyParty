@@ -256,10 +256,7 @@ public class Board : MonoBehaviour
 
             MoveTo(v1Cur, cur);
 
-            Tile t1 = _tiles[v1Cur];
-            t1.SetHide();
-                       
-            MoveDownAfterPang(v1Cur);
+            
             return;
         }
 
@@ -271,10 +268,7 @@ public class Board : MonoBehaviour
 
             MoveTo(v0Cur, cur);
 
-            Tile t1 = _tiles[v0Cur];
-            t1.SetHide();
-
-            MoveDownAfterPang(v0Cur);
+            
             return;
         }
 
@@ -286,10 +280,7 @@ public class Board : MonoBehaviour
 
             MoveTo(v5Cur, cur);
 
-            Tile t1 = _tiles[v5Cur];
-            t1.SetHide();
-
-            MoveDownAfterPang(v5Cur);
+           
             return;
         }
     }
@@ -299,9 +290,20 @@ public class Board : MonoBehaviour
         Tile f = _tiles[from];
         Tile t = _tiles[to];
 
-        t.SetIdx(f._idx);
+        int newIdx = f._idx;
+        f.SetHide();
+
+        t.SetIdx(newIdx);
         t.transform.localPosition = f.transform.localPosition;
-        t.transform.DOMove(t._pos, 0.3f);
+        t.transform.DOMove(t._pos, 2.3f).OnComplete(() =>
+        {
+            
+
+            MoveDownAfterPang(from);
+        });
+
+        //Tile t1 = _tiles[from];
+        //t1.SetHide();
     }
 
     //------------터치 작업들--------------
@@ -313,6 +315,7 @@ public class Board : MonoBehaviour
     int _iSecondTileCur = -1;
 
     List<int> _listMoveTiles = new List<int>();
+    List<int> _listPangTiles = new List<int>();
 
     //터치
     public void OnTouchDown(int cur)
@@ -452,8 +455,6 @@ public class Board : MonoBehaviour
         });
         f.transform.DOMove(t._pos, _fTimeChangeTile).OnComplete(() =>
         {
-            //t.transform.DOMove(t._pos, _fTimeChangeTile);
-            //f.transform.DOMove(f._pos, _fTimeChangeTile);
 
             t.SetSelect(false);
             f.SetSelect(false);
@@ -470,6 +471,8 @@ public class Board : MonoBehaviour
             _listMoveTiles.Add(cur1);
             _listMoveTiles.Add(cur2);
 
+            _listPangTiles.Clear();
+
             int result = FindPangFromList();
             Debug.Log(" pang cnt : " + result);
             if (result == 0)
@@ -484,6 +487,22 @@ public class Board : MonoBehaviour
                     f.SetIdx(temp);
                     f.transform.localPosition = f._pos;
                 });
+            }
+            else
+            {
+                //팡이 있으면 팡처리
+                //string s = "---";
+                //for ( int i = 0; i < _listPangTiles.Count; i ++)
+                //{
+                //    int v = _listPangTiles[i];
+                //    s += v + " ";
+                //}
+                //Debug.Log(s);
+                for (int i = 0; i < _listPangTiles.Count; i++)
+                {
+                    int v = _listPangTiles[i];
+                    Pang(v);
+                }
             }
         });
     }
@@ -508,24 +527,7 @@ public class Board : MonoBehaviour
 
         int i = cur / _iSize;
         int j = cur % _iSize;
-
-        int v0 = GetTileIdx(i - 1, j - 1);
-        int v0_0 = GetTileIdx(i - 2, j - 2);
-
-        int v1 = GetTileIdx(i - 1, j);
-        int v1_1 = GetTileIdx(i - 2, j);
-
-        int v3 = GetTileIdx(i, j - 1);
-        int v3_3 = GetTileIdx(i, j - 2);
-
-        //int v2 = GetTileIdx(i - 1, j + 1);
-        //int v4 = GetTileIdx(i , j);
-        //int v5 = GetTileIdx(i , j + 1);
-
-        //int v6 = GetTileIdx(i + 1, j - 1);
-        //int v7 = GetTileIdx(i + 1, j);
-        //int v8 = GetTileIdx(i + 1, j + 1);
-
+       
         int result = 0;
 
         result += FindTile_0(curV, i, j, 1);
@@ -534,6 +536,11 @@ public class Board : MonoBehaviour
         result += FindTile_5(curV, i, j, 1);
         result += FindTile_7(curV, i, j, 1);
         result += FindTile_8(curV, i, j, 1);
+
+        if ( result > 2 )
+        {
+            _listPangTiles.Add(cur);
+        }
 
         return result;
     }
@@ -546,7 +553,14 @@ public class Board : MonoBehaviour
         if (v0 >= 0 && v0 == idx )
         {
             cnt++;
-            return FindTile_0(idx, i, j, cnt);
+            int result = FindTile_0(idx, i, j, cnt);
+            if ( result > 2)
+            {
+                int cur = i * _iSize + j;
+                if (_listPangTiles.Contains(cur) == false)
+                    _listPangTiles.Add(cur);
+            }
+            return result;
         }
         if ( cnt > 2)
             return cnt;
@@ -561,7 +575,14 @@ public class Board : MonoBehaviour
         if (v0 >= 0 && v0 == idx)
         {
             cnt++;
-            return FindTile_1(idx, i, j, cnt);
+            int result = FindTile_1(idx, i, j, cnt);
+            if (result > 2)
+            {
+                int cur = i * _iSize + j;
+                if (_listPangTiles.Contains(cur) == false)
+                    _listPangTiles.Add(cur);
+            }
+            return result;
         }
         if (cnt > 2)
             return cnt;
@@ -576,7 +597,14 @@ public class Board : MonoBehaviour
         if (v0 >= 0 && v0 == idx)
         {
             cnt++;
-            return FindTile_3(idx, i, j, cnt);
+            int result = FindTile_3(idx, i, j, cnt);
+            if (result > 2)
+            {
+                int cur = i * _iSize + j;
+                if (_listPangTiles.Contains(cur) == false)
+                    _listPangTiles.Add(cur);
+            }
+            return result;
         }
         if (cnt > 2)
             return cnt;
@@ -591,7 +619,14 @@ public class Board : MonoBehaviour
         if (v0 >= 0 && v0 == idx)
         {
             cnt++;
-            return FindTile_5(idx, i, j, cnt);
+            int result = FindTile_5(idx, i, j, cnt);
+            if (result > 2)
+            {
+                int cur = i * _iSize + j;
+                if (_listPangTiles.Contains(cur) == false)
+                    _listPangTiles.Add(cur);
+            }
+            return result;
         }
         if (cnt > 2)
             return cnt;
@@ -606,7 +641,14 @@ public class Board : MonoBehaviour
         if (v0 >= 0 && v0 == idx)
         {
             cnt++;
-            return FindTile_7(idx, i, j, cnt);
+            int result = FindTile_7(idx, i, j, cnt);
+            if (result > 2)
+            {
+                int cur = i * _iSize + j;
+                if (_listPangTiles.Contains(cur) == false)
+                    _listPangTiles.Add(cur);
+            }
+            return result;
         }
         if (cnt > 2)
             return cnt;
@@ -620,7 +662,14 @@ public class Board : MonoBehaviour
         if (v0 >= 0 && v0 == idx)
         {
             cnt++;
-            return FindTile_8(idx, i, j, cnt);
+            int result = FindTile_8(idx, i, j, cnt);
+            if (result > 2)
+            {
+                int cur = i * _iSize + j;
+                if (_listPangTiles.Contains(cur) == false)
+                    _listPangTiles.Add(cur);
+            }
+            return result;
         }
         if (cnt > 2)
             return cnt;

@@ -48,6 +48,7 @@ public class Tile : MonoBehaviour
     public void SetHide()
     {
         SetIdx(-1);
+        transform.localScale = Vector3.one;
         _isPang = true;
     }
 
