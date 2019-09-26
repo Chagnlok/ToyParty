@@ -316,7 +316,7 @@ public class Board : MonoBehaviour
     int _touchDownCur = -1;
     int _touchEnterCur = -1;
 
-    List<int> _listMouseCur = new List<int>();
+    //List<int> _listMouseCur = new List<int>();
 
     //터치
     public void OnTouchDown(int cur)
@@ -324,8 +324,8 @@ public class Board : MonoBehaviour
         _touchEnterCur = -1;
         _touchDownCur = cur;
 
-        _listMouseCur.Clear();
-        _listMouseCur.Add(cur);
+        //_listMouseCur.Clear();
+        //_listMouseCur.Add(cur);
 
         Tile t = _tiles[cur];
         Vector3 sc = Vector3.one * 1.4f;
@@ -339,11 +339,13 @@ public class Board : MonoBehaviour
     {
         _touchDownCur = -1;
         _touchEnterCur = -1;
-        foreach (int one in _listMouseCur)
-        {
-            Tile t = _tiles[one];
-            t.transform.DOScale(Vector3.one, 0.2f);
-        }
+
+        
+        //foreach (int one in _listMouseCur)
+        //{
+        //    Tile t = _tiles[one];
+        //    t.transform.DOScale(Vector3.one, 0.2f);
+        //}
 
     }
 
@@ -361,28 +363,28 @@ public class Board : MonoBehaviour
         {
             _touchEnterCur = cur;
 
-            if (_listMouseCur.Contains(cur) == false)
-            {
-                foreach (int one in _listMouseCur)
-                {
-                    Tile tt = _tiles[one];
-                    tt.transform.localPosition = tt._pos;
-                }
+            //if (_listMouseCur.Contains(cur) == false)
+            //{
+            //    foreach (int one in _listMouseCur)
+            //    {
+            //        Tile tt = _tiles[one];
+            //        tt.transform.localPosition = tt._pos;
+            //    }
 
 
-                _listMouseCur.Add(cur);
+            //    _listMouseCur.Add(cur);
 
-                Tile t = _tiles[cur];
-                Vector3 sc = Vector3.one * 1.4f;
-                t.transform.DOScale(sc, 0.2f).OnComplete(() =>
-                {
-                    //t.transform.localScale = Vector3.one;
-                });
+            //    Tile t = _tiles[cur];
+            //    Vector3 sc = Vector3.one * 1.4f;
+            //    t.transform.DOScale(sc, 0.2f).OnComplete(() =>
+            //    {
+            //        //t.transform.localScale = Vector3.one;
+            //    });
 
-                Tile from = _tiles[_touchDownCur];
-                t.transform.DOMove(from._pos, 0.2f);
-                from.transform.DOMove(t._pos, 0.2f);
-            }
+            //    Tile from = _tiles[_touchDownCur];
+            //    t.transform.DOMove(from._pos, 0.2f);
+            //    from.transform.DOMove(t._pos, 0.2f);
+            //}
         }
     }
 
@@ -394,15 +396,15 @@ public class Board : MonoBehaviour
             return;
         
         
-        foreach (int one in _listMouseCur)
-        {
-            Tile t = _tiles[one];
-            if ( t._cur == cur )
-            {
-                t.transform.DOScale(Vector3.one, 0.2f);
-                //t.transform.DOMove(t._pos, 0.2f);
-            }
-        }
+        //foreach (int one in _listMouseCur)
+        //{
+        //    Tile t = _tiles[one];
+        //    if ( t._cur == cur )
+        //    {
+        //        t.transform.DOScale(Vector3.one, 0.2f);
+        //        //t.transform.DOMove(t._pos, 0.2f);
+        //    }
+        //}
 
         //_listMouseCur.Remove(cur);
     }
