@@ -14,6 +14,7 @@ public class Tile : MonoBehaviour
     public bool _isLock = false;
     public bool _isPang = false;
     public bool _isMaker = false;
+    public bool _isSelected = false;
 
     public Board _board;
 
@@ -78,7 +79,7 @@ public class Tile : MonoBehaviour
         if (_idx < 0)
             return;
 
-        //Debug.Log("OnMouseExit : " + _cur);
+        
         _board.OnTouchExit(_cur);
     }
 
@@ -87,9 +88,24 @@ public class Tile : MonoBehaviour
         if (_idx < 0)
             return;
 
-        //Debug.Log("OnMouseEnter : " + _cur);
+        
         _board.OnTouchEnter(_cur);
     }
 
+    public void SetSelect(bool b)
+    {
+        if (b == _isSelected)
+            return;
 
+        _isSelected = b;
+
+        if ( _isSelected == true)
+        {
+            transform.DOScale(Vector3.one * 1.4f, 0.2f);
+        }
+        else
+        {
+            transform.DOScale(Vector3.one, 0.2f);
+        }
+    }
 }

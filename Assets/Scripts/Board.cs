@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,7 +11,8 @@ public class Board : MonoBehaviour
     public Tile[] _tiles;
 
     GameObject _prefTile;
-
+    
+    const float _fTimeChangeTile = 0.2f;
     //0 1 2
     //3 4 5
     //6 7 8
@@ -32,13 +33,6 @@ public class Board : MonoBehaviour
         InitTiles();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-       
-    
     void InitTiles()
     {
         int totalTilesCnt = _iSize * _iSize;
@@ -63,8 +57,6 @@ public class Board : MonoBehaviour
             t0.gameObject.SetActive(false);
             _tiles[locked[i]] = t0;
         }
-
-        
 
         // 초기 스테이즈 설정
         float fOneSize = 0.8f;
@@ -312,40 +304,34 @@ public class Board : MonoBehaviour
         t.transform.DOMove(t._pos, 0.3f);
     }
 
-
+    //------------터치 작업들--------------
     int _touchDownCur = -1;
     int _touchEnterCur = -1;
+    int _touchUpCur = -1;
 
-    //List<int> _listMouseCur = new List<int>();
+    int _iFirstTileCur = -1;
+    int _iSecondTileCur = -1;
+
+    List<int> _listMoveTiles = new List<int>();
 
     //터치
     public void OnTouchDown(int cur)
     {
         _touchEnterCur = -1;
+        _touchUpCur = -1;
         _touchDownCur = cur;
 
-        //_listMouseCur.Clear();
-        //_listMouseCur.Add(cur);
-
-        Tile t = _tiles[cur];
-        Vector3 sc = Vector3.one * 1.4f;
-        t.transform.DOScale(sc, 0.2f).OnComplete(() =>
-        {
-            //t.transform.localScale = Vector3.one;
-        });
+        
+        
     }
 
     public void OnTouchUp(int cur)
     {
+        
         _touchDownCur = -1;
         _touchEnterCur = -1;
 
-        
-        //foreach (int one in _listMouseCur)
-        //{
-        //    Tile t = _tiles[one];
-        //    t.transform.DOScale(Vector3.one, 0.2f);
-        //}
+        _touchUpCur = cur;
 
     }
 
@@ -353,39 +339,17 @@ public class Board : MonoBehaviour
     {
         if (_touchDownCur < 0)
             return;
+
+        if (_iSecondTileCur >= 0)
+            return;
+
         if (_touchEnterCur == cur)
             return;
 
-        if (IsSide(_touchDownCur, cur) == false)
-            return;
+        //Debug.Log("OnMouseEnter : " + cur);
 
-        if (_touchDownCur != cur )
-        {
-            _touchEnterCur = cur;
+        _touchEnterCur = cur;
 
-            //if (_listMouseCur.Contains(cur) == false)
-            //{
-            //    foreach (int one in _listMouseCur)
-            //    {
-            //        Tile tt = _tiles[one];
-            //        tt.transform.localPosition = tt._pos;
-            //    }
-
-
-            //    _listMouseCur.Add(cur);
-
-            //    Tile t = _tiles[cur];
-            //    Vector3 sc = Vector3.one * 1.4f;
-            //    t.transform.DOScale(sc, 0.2f).OnComplete(() =>
-            //    {
-            //        //t.transform.localScale = Vector3.one;
-            //    });
-
-            //    Tile from = _tiles[_touchDownCur];
-            //    t.transform.DOMove(from._pos, 0.2f);
-            //    from.transform.DOMove(t._pos, 0.2f);
-            //}
-        }
     }
 
     public void OnTouchExit(int cur)
@@ -394,21 +358,66 @@ public class Board : MonoBehaviour
             return;
         if (_touchDownCur == cur)
             return;
-        
-        
-        //foreach (int one in _listMouseCur)
-        //{
-        //    Tile t = _tiles[one];
-        //    if ( t._cur == cur )
-        //    {
-        //        t.transform.DOScale(Vector3.one, 0.2f);
-        //        //t.transform.DOMove(t._pos, 0.2f);
-        //    }
-        //}
 
-        //_listMouseCur.Remove(cur);
+        
+
+        //Debug.Log("OnMouseExit : " + cur);
+
     }
 
+    // Update is called once per frame
+    void Update()
+    {
+        //터치 시작
+        if ( _touchDownCur >= 0 )
+        {
+            Tile t = _tiles[_touchDownCur];
+            
+            t.SetSelect(true);
+
+            _iFirstTileCur = _touchDownCur;
+            _iSecondTileCur = -1;
+        }
+        //드래그 중
+        if (_touchEnterCur >= 0 )
+        {
+            if ( IsSide(_iFirstTileCur, _touchEnterCur) == true )
+            {
+                //Debug.Log("---- " + _touchEnterCur);
+                Tile t = _tiles[_touchEnterCur];
+                t.SetSelect(true);
+                
+                SwapTiles(_iFirstTileCur, _touchEnterCur);
+
+                
+
+                _iSecondTileCur = _touchEnterCur;
+                _touchEnterCur = -1;
+                _touchDownCur = -1;
+            }
+        }
+        //드래그 끝
+        if ( _touchUpCur >= 0 )
+        {
+            if ( _iFirstTileCur >= 0 )
+            {
+                Tile t = _tiles[_iFirstTileCur];
+
+                t.SetSelect(false);
+
+                _iFirstTileCur = -1;
+            }
+
+            if (_iSecondTileCur >= 0)
+            {
+                Tile t = _tiles[_iSecondTileCur];
+                t.SetSelect(false);
+                _iSecondTileCur = -1;
+            }
+
+            _touchUpCur = -1;
+        }
+    }
 
     // 이동 가능한 위치인지 검사 
     public bool IsSide(int from, int to)
@@ -430,5 +439,191 @@ public class Board : MonoBehaviour
             return true;
 
         return false;
+    }
+
+    public void SwapTiles(int cur1, int cur2)
+    {
+        Tile t = _tiles[cur1];
+        Tile f = _tiles[cur2];
+
+        t.transform.DOMove(f._pos, _fTimeChangeTile).OnComplete(() =>
+        {
+
+        });
+        f.transform.DOMove(t._pos, _fTimeChangeTile).OnComplete(() =>
+        {
+            //t.transform.DOMove(t._pos, _fTimeChangeTile);
+            //f.transform.DOMove(f._pos, _fTimeChangeTile);
+
+            t.SetSelect(false);
+            f.SetSelect(false);
+
+            int temp = t._idx;
+            t.SetIdx(f._idx);
+            t.transform.localPosition = t._pos;
+            f.SetIdx(temp);
+            f.transform.localPosition = f._pos;
+
+
+            // 교체 후 팡를 것 찾아 검사
+            _listMoveTiles.Clear();
+            _listMoveTiles.Add(cur1);
+            _listMoveTiles.Add(cur2);
+
+            int result = FindPangFromList();
+            Debug.Log(" pang cnt : " + result);
+            if (result == 0)
+            {
+                //바뀐 내용이 없으면 다시 타일 복구
+                t.transform.DOMove(f._pos, _fTimeChangeTile);
+                f.transform.DOMove(t._pos, _fTimeChangeTile).OnComplete(() =>
+                {
+                    temp = t._idx;
+                    t.SetIdx(f._idx);
+                    t.transform.localPosition = t._pos;
+                    f.SetIdx(temp);
+                    f.transform.localPosition = f._pos;
+                });
+            }
+        });
+    }
+
+    //----------검색-------
+    int FindPangFromList()
+    {
+        int result = 0;
+        while ( _listMoveTiles.Count > 0)
+        {
+            int cur = _listMoveTiles[0];
+            _listMoveTiles.Remove(cur);
+
+            result += FindPang(cur);
+        }
+        return result;
+    }
+
+    int FindPang(int cur)
+    {
+        int curV = _tiles[cur]._idx;
+
+        int i = cur / _iSize;
+        int j = cur % _iSize;
+
+        int v0 = GetTileIdx(i - 1, j - 1);
+        int v0_0 = GetTileIdx(i - 2, j - 2);
+
+        int v1 = GetTileIdx(i - 1, j);
+        int v1_1 = GetTileIdx(i - 2, j);
+
+        int v3 = GetTileIdx(i, j - 1);
+        int v3_3 = GetTileIdx(i, j - 2);
+
+        //int v2 = GetTileIdx(i - 1, j + 1);
+        //int v4 = GetTileIdx(i , j);
+        //int v5 = GetTileIdx(i , j + 1);
+
+        //int v6 = GetTileIdx(i + 1, j - 1);
+        //int v7 = GetTileIdx(i + 1, j);
+        //int v8 = GetTileIdx(i + 1, j + 1);
+
+        int result = 0;
+
+        result += FindTile_0(curV, i, j, 1);
+        result += FindTile_1(curV, i, j, 1);
+        result += FindTile_3(curV, i, j, 1);
+        result += FindTile_5(curV, i, j, 1);
+        result += FindTile_7(curV, i, j, 1);
+        result += FindTile_8(curV, i, j, 1);
+
+        return result;
+    }
+
+    int FindTile_0(int idx, int i, int j, int cnt)
+    {
+        i --;
+        j --;
+        int v0 = GetTileIdx(i, j);
+        if (v0 >= 0 && v0 == idx )
+        {
+            cnt++;
+            return FindTile_0(idx, i, j, cnt);
+        }
+        if ( cnt > 2)
+            return cnt;
+        return 0;
+    }
+
+    int FindTile_1(int idx, int i, int j, int cnt)
+    {
+        i--;
+        
+        int v0 = GetTileIdx(i, j);
+        if (v0 >= 0 && v0 == idx)
+        {
+            cnt++;
+            return FindTile_1(idx, i, j, cnt);
+        }
+        if (cnt > 2)
+            return cnt;
+        return 0;
+    }
+
+    int FindTile_3(int idx, int i, int j, int cnt)
+    {
+        j--;
+
+        int v0 = GetTileIdx(i, j);
+        if (v0 >= 0 && v0 == idx)
+        {
+            cnt++;
+            return FindTile_3(idx, i, j, cnt);
+        }
+        if (cnt > 2)
+            return cnt;
+        return 0;
+    }
+
+    int FindTile_5(int idx, int i, int j, int cnt)
+    {
+        j++;
+
+        int v0 = GetTileIdx(i, j);
+        if (v0 >= 0 && v0 == idx)
+        {
+            cnt++;
+            return FindTile_5(idx, i, j, cnt);
+        }
+        if (cnt > 2)
+            return cnt;
+        return 0;
+    }
+
+    int FindTile_7(int idx, int i, int j, int cnt)
+    {
+        i++;
+
+        int v0 = GetTileIdx(i, j);
+        if (v0 >= 0 && v0 == idx)
+        {
+            cnt++;
+            return FindTile_7(idx, i, j, cnt);
+        }
+        if (cnt > 2)
+            return cnt;
+        return 0;
+    }
+    int FindTile_8(int idx, int i, int j, int cnt)
+    {
+        i++;
+        j++;
+        int v0 = GetTileIdx(i, j);
+        if (v0 >= 0 && v0 == idx)
+        {
+            cnt++;
+            return FindTile_8(idx, i, j, cnt);
+        }
+        if (cnt > 2)
+            return cnt;
+        return 0;
     }
 }
