@@ -83,7 +83,7 @@ public class Board : MonoBehaviour
                     y += fOneSize / 2 * j;
                     Vector3 v = new Vector3(x, y, 0.0f);
                     t0.transform.localPosition = Vector3.zero;
-                    t0.transform.DOMove(v, 1f);
+                    t0.transform.DOLocalMove(v, 1f);
                     
                     _tiles[cur] = t0;
                     _tiles[cur]._pos = v;
@@ -209,14 +209,15 @@ public class Board : MonoBehaviour
 
         Tile t = _tiles[cur];
 
-        t.transform.DOPunchScale(Vector3.one / 5, 0.4f).OnComplete(() =>
-        {
-            t.SetHide();
-            MoveDownAfterPang(cur);
-        });
+        t.SetHide();
+        //t.transform.DOPunchScale(Vector3.one / 5, 0.4f).OnComplete(() =>
+        //{
+        //    t.SetHide();
+        //    MoveDownAfterPang(cur);
+        //});
     }
 
-    void MoveDownAfterPang(int cur)
+    public void MoveDownAfterPang(int cur)
     {
         //0 1 2
         //3 4 5
@@ -237,15 +238,30 @@ public class Board : MonoBehaviour
         Tile t = _tiles[cur];
 
         // 생성 가능한 타일인경우
-        if ( t._isMaker == true)
+        if (t._isMaker == true)
         {
             int r = GetRandomIdx();
             t.SetIdx(r);
+            t._isLock = true;
             Vector3 pos = t._pos;
-            pos.y += 0.8f;
+            pos.y += 0.5f;
             t.transform.localPosition = pos;
-            t.transform.DOMove(t._pos, 0.3f);
+            t.transform.DOLocalMove(t._pos, 0.3f).OnComplete(() =>
+            {
+                t._isLock = false;
+            });
             return;
+        }
+
+        //위에 타일이 비어있는 경우 찰때까지 기다린다
+        if ( ii - 1 >= 0 )
+        {
+            Tile upTile = _tiles[cur - _iSize];
+            if (upTile._isPang == true)
+            {
+                _listWaitingTiles.Add(cur);
+                return;
+            }
         }
 
         //1
@@ -283,6 +299,8 @@ public class Board : MonoBehaviour
            
             return;
         }
+
+        _listWaitingTiles.Add(cur);
     }
 
     void MoveTo(int from, int to)
@@ -294,13 +312,14 @@ public class Board : MonoBehaviour
         f.SetHide();
 
         t.SetIdx(newIdx);
-        t.transform.localPosition = f.transform.localPosition;
-        t.transform.DOMove(t._pos, 2.3f).OnComplete(() =>
+        t._isLock = true;
+        t.transform.localPosition = f._pos;
+        t.transform.DOLocalMove(t._pos, 0.1f).OnComplete(() =>
         {
-            
-
+            t._isLock = false;
             MoveDownAfterPang(from);
         });
+        
 
         //Tile t1 = _tiles[from];
         //t1.SetHide();
@@ -314,8 +333,10 @@ public class Board : MonoBehaviour
     int _iFirstTileCur = -1;
     int _iSecondTileCur = -1;
 
-    List<int> _listMoveTiles = new List<int>();
+    List<int> _listMoveTiles = new List<int>(); 
     List<int> _listPangTiles = new List<int>();
+    List<int> _listWaitingTiles = new List<int>();
+
 
     //터치
     public void OnTouchDown(int cur)
@@ -420,14 +441,49 @@ public class Board : MonoBehaviour
 
             _touchUpCur = -1;
         }
+
+        //--- 타일 터트리고 새로운 타일 내려주고-------
+        while (_listPangTiles.Count > 0)
+        {
+            List<int> listTemp = new List<int>();
+            foreach (int one in _listPangTiles)
+            {
+                listTemp.Add(one);
+            }
+            _listPangTiles.Clear();
+
+            listTemp.Sort(CompareDepts);
+
+            foreach (int one in listTemp)
+            {
+                Pang(one);
+                _listWaitingTiles.Add(one);
+            }
+
+        }
+        if (_listWaitingTiles.Count > 0)
+        {
+            List<int> listTemp = new List<int>();
+            foreach (int one in _listWaitingTiles)
+            {
+                listTemp.Add(one);
+            }
+            _listWaitingTiles.Clear();
+
+            listTemp.Sort(CompareDepts);
+            foreach (int one in listTemp)
+            {
+                MoveDownAfterPang(one);
+            }
+          
+        }
     }
 
     // 이동 가능한 위치인지 검사 
     public bool IsSide(int from, int to)
     {
         int dif = to - from;
-
-
+        
         if (dif == -_iSize - 1)
             return true;
         if (dif == -_iSize)
@@ -444,16 +500,40 @@ public class Board : MonoBehaviour
         return false;
     }
 
+    public int CompareDepts(int a, int b)
+    {
+        int i = a / _iSize;
+        int j = a % _iSize;
+        int a1 = i * (-10) + j * 5;
+
+        int ii = b / _iSize;
+        int jj = b % _iSize;
+        int a2 = ii * (-10) + jj * 5;
+
+        if ( a1 > a2 )
+        { 
+            return  1;
+        }
+        else if ( a1 < a2 )
+        {
+            return -1;
+        }
+        else
+        {
+            return 0;
+        }        
+    }
+
     public void SwapTiles(int cur1, int cur2)
     {
         Tile t = _tiles[cur1];
         Tile f = _tiles[cur2];
 
-        t.transform.DOMove(f._pos, _fTimeChangeTile).OnComplete(() =>
+        t.transform.DOLocalMove(f._pos, _fTimeChangeTile).OnComplete(() =>
         {
 
         });
-        f.transform.DOMove(t._pos, _fTimeChangeTile).OnComplete(() =>
+        f.transform.DOLocalMove(t._pos, _fTimeChangeTile).OnComplete(() =>
         {
 
             t.SetSelect(false);
@@ -478,8 +558,8 @@ public class Board : MonoBehaviour
             if (result == 0)
             {
                 //바뀐 내용이 없으면 다시 타일 복구
-                t.transform.DOMove(f._pos, _fTimeChangeTile);
-                f.transform.DOMove(t._pos, _fTimeChangeTile).OnComplete(() =>
+                t.transform.DOLocalMove(f._pos, _fTimeChangeTile);
+                f.transform.DOLocalMove(t._pos, _fTimeChangeTile).OnComplete(() =>
                 {
                     temp = t._idx;
                     t.SetIdx(f._idx);
@@ -498,11 +578,10 @@ public class Board : MonoBehaviour
                 //    s += v + " ";
                 //}
                 //Debug.Log(s);
-                for (int i = 0; i < _listPangTiles.Count; i++)
-                {
-                    int v = _listPangTiles[i];
-                    Pang(v);
-                }
+                
+                
+                    
+
             }
         });
     }
