@@ -246,8 +246,9 @@ public class Board : MonoBehaviour
             Vector3 pos = t._pos;
             pos.y += 0.5f;
             t.transform.localPosition = pos;
-            t.transform.DOLocalMove(t._pos, 0.3f).OnComplete(() =>
+            t.transform.DOLocalMove(t._pos, 0.1f).OnComplete(() =>
             {
+                t._isPang = false;
                 t._isLock = false;
             });
             return;
@@ -313,13 +314,18 @@ public class Board : MonoBehaviour
 
         t.SetIdx(newIdx);
         t._isLock = true;
-        t.transform.localPosition = f._pos;
-        t.transform.DOLocalMove(t._pos, 0.1f).OnComplete(() =>
+        //t.transform.localPosition = f._pos;
+        t.transform.localPosition = f.transform.localPosition;
+        t.transform.DOLocalMove(t._pos, 0.1f)
+            .OnComplete(() =>
         {
+            t._isPang = false;
             t._isLock = false;
-            MoveDownAfterPang(from);
-        });
-        
+            
+        }) ;
+
+        MoveDownAfterPang(from);
+
 
         //Tile t1 = _tiles[from];
         //t1.SetHide();
@@ -496,7 +502,6 @@ public class Board : MonoBehaviour
             return true;
         if (dif == _iSize + 1)
             return true;
-
         return false;
     }
 

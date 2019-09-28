@@ -44,8 +44,8 @@ public class Tile : MonoBehaviour
                 _obj[i].gameObject.SetActive(false);
         }
 
-        if (idx >= 0)
-            _isPang = false;
+        //if (idx >= 0)
+          //  _isPang = false;
     }
 
     public void SetHide()
