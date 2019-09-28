@@ -13,6 +13,7 @@ public class Board : MonoBehaviour
     GameObject _prefTile;
     
     const float _fTimeChangeTile = 0.2f;
+    const float _fTimeMoveTile = 0.2f;
     //0 1 2
     //3 4 5
     //6 7 8
@@ -246,10 +247,11 @@ public class Board : MonoBehaviour
             Vector3 pos = t._pos;
             pos.y += 0.5f;
             t.transform.localPosition = pos;
-            t.transform.DOLocalMove(t._pos, 0.1f).OnComplete(() =>
+            t.transform.DOLocalMove(t._pos, _fTimeMoveTile).OnComplete(() =>
             {
                 t._isPang = false;
                 t._isLock = false;
+                AddMoveTile(t._cur);
             });
             return;
         }
@@ -316,12 +318,12 @@ public class Board : MonoBehaviour
         t._isLock = true;
         //t.transform.localPosition = f._pos;
         t.transform.localPosition = f.transform.localPosition;
-        t.transform.DOLocalMove(t._pos, 0.1f)
+        t.transform.DOLocalMove(t._pos, _fTimeMoveTile)
             .OnComplete(() =>
         {
             t._isPang = false;
             t._isLock = false;
-            
+            AddMoveTile(t._cur);
         }) ;
 
         MoveDownAfterPang(from);
@@ -467,6 +469,8 @@ public class Board : MonoBehaviour
             }
 
         }
+        
+            
         if (_listWaitingTiles.Count > 0)
         {
             List<int> listTemp = new List<int>();
@@ -483,6 +487,13 @@ public class Board : MonoBehaviour
             }
           
         }
+
+        if (_listWaitingTiles.Count < 1)
+        {
+            FindPangFromList_Debug();
+        }
+
+        
     }
 
     // 이동 가능한 위치인지 검사 
@@ -552,9 +563,10 @@ public class Board : MonoBehaviour
 
 
             // 교체 후 팡를 것 찾아 검사
-            _listMoveTiles.Clear();
-            _listMoveTiles.Add(cur1);
-            _listMoveTiles.Add(cur2);
+            ClearMoveTiles();
+            AddMoveTile(cur1);
+            AddMoveTile(cur2);
+            
 
             _listPangTiles.Clear();
 
@@ -584,9 +596,6 @@ public class Board : MonoBehaviour
                 //}
                 //Debug.Log(s);
                 
-                
-                    
-
             }
         });
     }
@@ -602,6 +611,32 @@ public class Board : MonoBehaviour
 
             result += FindPang(cur);
         }
+        
+        
+        return result;
+    }
+
+    int FindPangFromList_Debug()
+    {
+        int cnt = _listMoveTiles.Count;
+
+        int result = 0;
+        string s = "";
+        while (_listMoveTiles.Count > 0)
+        {
+            int cur = _listMoveTiles[0];
+
+            s += cur + ", ";
+            _listMoveTiles.Remove(cur);
+
+            result += FindPang(cur);
+        }
+
+        if (cnt != 0)
+        {
+            Debug.Log(_listPangTiles.Count + " : " + s);
+        }
+
         return result;
     }
 
@@ -614,22 +649,63 @@ public class Board : MonoBehaviour
        
         int result = 0;
 
-        result += FindTile_0(curV, i, j, 1);
-        result += FindTile_1(curV, i, j, 1);
-        result += FindTile_3(curV, i, j, 1);
-        result += FindTile_5(curV, i, j, 1);
-        result += FindTile_7(curV, i, j, 1);
-        result += FindTile_8(curV, i, j, 1);
+        //한쪽 방향으로 검색
+        result += FindTile_0(curV, i, j, 1, 3);
+        result += FindTile_1(curV, i, j, 1, 3);
+        result += FindTile_3(curV, i, j, 1, 3);
+        result += FindTile_5(curV, i, j, 1, 3);
+        result += FindTile_7(curV, i, j, 1, 3);
+        result += FindTile_8(curV, i, j, 1, 3);
+
+        //양쪽 방향
+        {
+            List<int> listTemp = new List<int>();
+            int s0 = FindTile_0(curV, i, j, 1, 2, listTemp);
+            int s8 = FindTile_8(curV, i, j, 1, 2, listTemp);
+            if ( s0 + s8 >= 4)
+            {
+                result += s0 + s8;
+                foreach(int one in listTemp)
+                {
+                    AddPangTile(one);
+                }
+            }
+
+            listTemp.Clear();
+            int s1 = FindTile_1(curV, i, j, 1, 2, listTemp);
+            int s7 = FindTile_7(curV, i, j, 1, 2, listTemp);
+            if (s1 + s7 >= 4)
+            {
+                result += s1 + s7;
+                foreach (int one in listTemp)
+                {
+                    AddPangTile(one);
+                }
+            }
+
+            listTemp.Clear();
+            int s3 = FindTile_3(curV, i, j, 1, 2, listTemp);
+            int s5 = FindTile_5(curV, i, j, 1, 2, listTemp);
+            if (s3 + s5 >= 4)
+            {
+                result += s3 + s5;
+                foreach (int one in listTemp)
+                {
+                    AddPangTile(one);
+                }
+            }
+        }
+                
 
         if ( result > 2 )
         {
-            _listPangTiles.Add(cur);
+            AddPangTile(cur);
         }
 
         return result;
     }
 
-    int FindTile_0(int idx, int i, int j, int cnt)
+    int FindTile_0(int idx, int i, int j, int cnt , int needCnt, List<int> listTemp = null)
     {
         i --;
         j --;
@@ -637,21 +713,29 @@ public class Board : MonoBehaviour
         if (v0 >= 0 && v0 == idx )
         {
             cnt++;
-            int result = FindTile_0(idx, i, j, cnt);
-            if ( result > 2)
+            int result = FindTile_0(idx, i, j, cnt, needCnt);
+            if ( result >= needCnt )
             {
                 int cur = i * _iSize + j;
-                if (_listPangTiles.Contains(cur) == false)
-                    _listPangTiles.Add(cur);
+                if( listTemp != null)
+                {
+                    if (listTemp.Contains(cur) == false)
+                        listTemp.Add(cur);
+                }
+                else
+                {
+                    AddPangTile(cur);
+                }
+                
             }
             return result;
         }
-        if ( cnt > 2)
+        if ( cnt >= needCnt )
             return cnt;
         return 0;
     }
 
-    int FindTile_1(int idx, int i, int j, int cnt)
+    int FindTile_1(int idx, int i, int j, int cnt, int needCnt, List<int> listTemp = null)
     {
         i--;
         
@@ -659,104 +743,156 @@ public class Board : MonoBehaviour
         if (v0 >= 0 && v0 == idx)
         {
             cnt++;
-            int result = FindTile_1(idx, i, j, cnt);
-            if (result > 2)
+            int result = FindTile_1(idx, i, j, cnt, needCnt);
+            if (result >= needCnt)
             {
                 int cur = i * _iSize + j;
-                if (_listPangTiles.Contains(cur) == false)
-                    _listPangTiles.Add(cur);
+                if (listTemp != null)
+                {
+                    if (listTemp.Contains(cur) == false)
+                        listTemp.Add(cur);
+                }
+                else
+                {
+                    AddPangTile(cur);
+                }
             }
             return result;
         }
-        if (cnt > 2)
+        if (cnt >= needCnt)
             return cnt;
         return 0;
     }
 
-    int FindTile_3(int idx, int i, int j, int cnt)
-    {
+    int FindTile_3(int idx, int i, int j, int cnt, int needCnt, List<int> listTemp = null)
+{
         j--;
 
         int v0 = GetTileIdx(i, j);
         if (v0 >= 0 && v0 == idx)
         {
             cnt++;
-            int result = FindTile_3(idx, i, j, cnt);
-            if (result > 2)
+            int result = FindTile_3(idx, i, j, cnt, needCnt);
+            if (result >= needCnt)
             {
                 int cur = i * _iSize + j;
-                if (_listPangTiles.Contains(cur) == false)
-                    _listPangTiles.Add(cur);
+                if (listTemp != null)
+                {
+                    if (listTemp.Contains(cur) == false)
+                        listTemp.Add(cur);
+                }
+                else
+                {
+                    AddPangTile(cur);
+                }
             }
             return result;
         }
-        if (cnt > 2)
+        if (cnt >= needCnt)
             return cnt;
         return 0;
     }
 
-    int FindTile_5(int idx, int i, int j, int cnt)
-    {
+    int FindTile_5(int idx, int i, int j, int cnt, int needCnt, List<int> listTemp = null)
+{
         j++;
 
         int v0 = GetTileIdx(i, j);
         if (v0 >= 0 && v0 == idx)
         {
             cnt++;
-            int result = FindTile_5(idx, i, j, cnt);
-            if (result > 2)
+            int result = FindTile_5(idx, i, j, cnt, needCnt);
+            if (result >= needCnt)
             {
                 int cur = i * _iSize + j;
-                if (_listPangTiles.Contains(cur) == false)
-                    _listPangTiles.Add(cur);
+                if (listTemp != null)
+                {
+                    if (listTemp.Contains(cur) == false)
+                        listTemp.Add(cur);
+                }
+                else
+                {
+                    AddPangTile(cur);
+                }
             }
             return result;
         }
-        if (cnt > 2)
+        if (cnt >= needCnt)
             return cnt;
         return 0;
     }
 
-    int FindTile_7(int idx, int i, int j, int cnt)
-    {
+    int FindTile_7(int idx, int i, int j, int cnt, int needCnt, List<int> listTemp = null)
+{
         i++;
 
         int v0 = GetTileIdx(i, j);
         if (v0 >= 0 && v0 == idx)
         {
             cnt++;
-            int result = FindTile_7(idx, i, j, cnt);
-            if (result > 2)
+            int result = FindTile_7(idx, i, j, cnt, needCnt);
+            if (result >= needCnt)
             {
                 int cur = i * _iSize + j;
-                if (_listPangTiles.Contains(cur) == false)
-                    _listPangTiles.Add(cur);
+                if (listTemp != null)
+                {
+                    if (listTemp.Contains(cur) == false)
+                        listTemp.Add(cur);
+                }
+                else
+                {
+                    AddPangTile(cur);
+                }
             }
             return result;
         }
-        if (cnt > 2)
+        if (cnt >= needCnt)
             return cnt;
         return 0;
     }
-    int FindTile_8(int idx, int i, int j, int cnt)
-    {
+    int FindTile_8(int idx, int i, int j, int cnt, int needCnt, List<int> listTemp = null)
+{
         i++;
         j++;
         int v0 = GetTileIdx(i, j);
         if (v0 >= 0 && v0 == idx)
         {
             cnt++;
-            int result = FindTile_8(idx, i, j, cnt);
-            if (result > 2)
+            int result = FindTile_8(idx, i, j, cnt, needCnt);
+            if (result >= needCnt)
             {
                 int cur = i * _iSize + j;
-                if (_listPangTiles.Contains(cur) == false)
-                    _listPangTiles.Add(cur);
+                if (listTemp != null)
+                {
+                    if (listTemp.Contains(cur) == false)
+                        listTemp.Add(cur);
+                }
+                else
+                {
+                    AddPangTile(cur);
+                }
             }
             return result;
         }
-        if (cnt > 2)
+        if (cnt >= needCnt)
             return cnt;
         return 0;
+    }
+
+    void ClearMoveTiles()
+    {
+        _listMoveTiles.Clear();
+    }
+    void AddMoveTile(int cur)
+    {
+        if (_listMoveTiles.Contains(cur) == false)
+            _listMoveTiles.Add(cur);
+    }
+
+    void AddPangTile(int cur )
+    {
+        Debug.Log("add pang tile : " + cur);
+        if (_listPangTiles.Contains(cur) == false)
+            _listPangTiles.Add(cur);
     }
 }
