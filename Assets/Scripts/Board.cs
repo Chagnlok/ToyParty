@@ -6,14 +6,20 @@ using DG.Tweening;
 
 public class Board : MonoBehaviour
 {
+    //보드사이즈
     int _iSize = 7;
+    //타일 종류
     public const int TILE_MAX = 5;
+    //보드에 깔릴 타일
     public Tile[] _tiles;
 
+    //팡 효과
+    public PangEff[] _aniPangEffs;
+
     GameObject _prefTile;
-    
-    const float _fTimeChangeTile = 0.2f;
-    const float _fTimeMoveTile = 0.2f;
+
+    public static float _fTimeChangeTile = 0.2f;
+    public static float _fTimeMoveTile = 0.15f;
     //0 1 2
     //3 4 5
     //6 7 8
@@ -59,9 +65,44 @@ public class Board : MonoBehaviour
             _tiles[locked[i]] = t0;
         }
 
-        // 초기 스테이즈 설정
+
         float fOneSize = 0.8f;
-        float fSideStartX = - fOneSize * (_iSize-1) / 2.0f;
+        float fSideStartX = -fOneSize * (_iSize - 1) / 2.0f;
+
+        //팽이 위치 잡기
+        int[] tops = { 1, 2, 11, 19, 22, 24, 30, 38, 39, 40  };
+        for (int k = 0; k < tops.Length; k ++)
+        {
+            int cur = tops[k];
+            if (_tiles[cur] == null )
+            {
+                int i = cur / _iSize;
+                int j = cur % _iSize;
+                int r = (int)Tile.TILE_IDX.TOP;
+                Tile t0 = Instantiate<Tile>(_prefTile.transform.GetComponent<Tile>());
+                t0.name = "Top : " + cur;
+                t0.SetIdx(r);
+
+                t0.transform.localScale = Vector3.one;
+
+                t0.transform.parent = this.transform;
+                float x = fSideStartX + fOneSize * j;
+                float y = fSideStartX - fOneSize * i + 3.0f;
+                y += fOneSize / 2 * j;
+                Vector3 v = new Vector3(x, y, 0.0f);
+                t0.transform.localPosition = Vector3.zero;
+                t0.transform.DOLocalMove(v, 1f);
+
+                _tiles[cur] = t0;
+                _tiles[cur]._pos = v;
+                _tiles[cur]._cur = cur;
+                _tiles[cur]._board = this;
+            }
+            
+        }
+
+        // 초기 스테이즈 설정
+        
         
         int line = 0;
         for ( int i = 0; i < _iSize; i ++)
@@ -84,7 +125,7 @@ public class Board : MonoBehaviour
                     y += fOneSize / 2 * j;
                     Vector3 v = new Vector3(x, y, 0.0f);
                     t0.transform.localPosition = Vector3.zero;
-                    t0.transform.DOLocalMove(v, 1f);
+                    t0.transform.DOLocalMove(v, 0.5f);
                     
                     _tiles[cur] = t0;
                     _tiles[cur]._pos = v;
@@ -203,6 +244,20 @@ public class Board : MonoBehaviour
         return (int)Random.Range(0, TILE_MAX); 
     }
 
+    public void StartEffs(Tile t, int idx)
+    {
+        GameObject go = Instantiate(_aniPangEffs[0].gameObject) as GameObject;
+        go.transform.parent = this.transform;
+        go.transform.localScale = Vector3.one;
+        go.transform.position = t.transform.position;
+
+        PangEff ef = go.GetComponent<PangEff>();
+
+        ef.SetIdx(idx);
+        ef.StartAni();
+    }
+
+    //타일 터트리기
     public void Pang(int cur)
     {
         if (cur < 0)
@@ -210,12 +265,49 @@ public class Board : MonoBehaviour
 
         Tile t = _tiles[cur];
 
+        int idx = t._idx;
+
         t.SetHide();
-        //t.transform.DOPunchScale(Vector3.one / 5, 0.4f).OnComplete(() =>
-        //{
-        //    t.SetHide();
-        //    MoveDownAfterPang(cur);
-        //});
+
+        StartEffs(t, idx);
+        
+
+        //근처 특수 타일 검색
+        int i = cur / _iSize;
+        int j = cur % _iSize;
+        int s0 = GetTileIdx(i - 1, j - 1);
+        int s1 = GetTileIdx(i - 1, j);
+        //int s2 = GetTileIdx(i - 1, j + 1);
+        int s3 = GetTileIdx(i, j - 1);
+        int s5 = GetTileIdx(i, j + 1);
+        //int s6 = GetTileIdx(i + 1, j - 1);
+        int s7 = GetTileIdx(i + 1, j);
+        int s8 = GetTileIdx(i + 1, j + 1);
+
+        if (s0 == (int)Tile.TILE_IDX.TOP)
+        {
+            AddTopTile(cur - _iSize - 1);
+        }
+        if (s1 == (int)Tile.TILE_IDX.TOP)
+        {
+            AddTopTile(cur - _iSize);
+        }
+        if (s3 == (int)Tile.TILE_IDX.TOP)
+        {
+            AddTopTile(cur - 1);
+        }
+        if (s5 == (int)Tile.TILE_IDX.TOP)
+        {
+            AddTopTile(cur + 1);
+        }
+        if (s7 == (int)Tile.TILE_IDX.TOP)
+        {
+            AddTopTile(cur + _iSize);
+        }
+        if (s8 == (int)Tile.TILE_IDX.TOP)
+        {
+            AddTopTile(cur + _iSize + 1);
+        }
     }
 
     public void MoveDownAfterPang(int cur)
@@ -262,7 +354,7 @@ public class Board : MonoBehaviour
             Tile upTile = _tiles[cur - _iSize];
             if (upTile._isPang == true)
             {
-                _listWaitingTiles.Add(cur);
+                AddWaitingTile(cur);
                 return;
             }
         }
@@ -303,7 +395,7 @@ public class Board : MonoBehaviour
             return;
         }
 
-        _listWaitingTiles.Add(cur);
+        AddWaitingTile(cur);
     }
 
     void MoveTo(int from, int to)
@@ -311,20 +403,7 @@ public class Board : MonoBehaviour
         Tile f = _tiles[from];
         Tile t = _tiles[to];
 
-        int newIdx = f._idx;
-        f.SetHide();
-
-        t.SetIdx(newIdx);
-        t._isLock = true;
-        //t.transform.localPosition = f._pos;
-        t.transform.localPosition = f.transform.localPosition;
-        t.transform.DOLocalMove(t._pos, _fTimeMoveTile)
-            .OnComplete(() =>
-        {
-            t._isPang = false;
-            t._isLock = false;
-            AddMoveTile(t._cur);
-        }) ;
+        t.Copy(f);
 
         MoveDownAfterPang(from);
 
@@ -341,9 +420,14 @@ public class Board : MonoBehaviour
     int _iFirstTileCur = -1;
     int _iSecondTileCur = -1;
 
-    List<int> _listMoveTiles = new List<int>(); 
+    //움직이는 타일
+    List<int> _listMoveTiles = new List<int>();
+    //터트리는 타일
     List<int> _listPangTiles = new List<int>();
+    //대기중인 타일
     List<int> _listWaitingTiles = new List<int>();
+    //팽이 특수 타일
+    List<int> _listTopTiles = new List<int>();
 
 
     //터치
@@ -450,7 +534,7 @@ public class Board : MonoBehaviour
             _touchUpCur = -1;
         }
 
-        //--- 타일 터트리고 새로운 타일 내려주고-------
+        //타일 터트리기
         while (_listPangTiles.Count > 0)
         {
             List<int> listTemp = new List<int>();
@@ -465,11 +549,20 @@ public class Board : MonoBehaviour
             foreach (int one in listTemp)
             {
                 Pang(one);
-                _listWaitingTiles.Add(one);
+                AddWaitingTile(one);
             }
 
         }
-        
+
+        //특수 타일 - 팽이
+        if ( _listTopTiles.Count > 0)
+        {
+            foreach (int one in _listTopTiles)
+            {
+                _tiles[one].Damaged();
+            }
+            _listTopTiles.Clear();
+        }
             
         if (_listWaitingTiles.Count > 0)
         {
@@ -490,7 +583,7 @@ public class Board : MonoBehaviour
 
         if (_listWaitingTiles.Count < 1)
         {
-            FindPangFromList_Debug();
+            FindPangFromList();
         }
 
         
@@ -600,7 +693,7 @@ public class Board : MonoBehaviour
         });
     }
 
-    //----------검색-------
+    // 보드 전체를 검색하는 것이 아니라 움직은 타일만 검색을 함
     int FindPangFromList()
     {
         int result = 0;
@@ -642,6 +735,12 @@ public class Board : MonoBehaviour
 
     int FindPang(int cur)
     {
+        if (_tiles[cur]._isTop == true)
+        {
+            //팽이라면 검색할 필요가 없음
+            return 0;
+        }
+
         int curV = _tiles[cur]._idx;
 
         int i = cur / _iSize;
@@ -649,7 +748,7 @@ public class Board : MonoBehaviour
        
         int result = 0;
 
-        //한쪽 방향으로 검색
+        //한쪽 방향으로 검색 3개
         result += FindTile_0(curV, i, j, 1, 3);
         result += FindTile_1(curV, i, j, 1, 3);
         result += FindTile_3(curV, i, j, 1, 3);
@@ -657,7 +756,7 @@ public class Board : MonoBehaviour
         result += FindTile_7(curV, i, j, 1, 3);
         result += FindTile_8(curV, i, j, 1, 3);
 
-        //양쪽 방향
+        //양쪽 방향 3개
         {
             List<int> listTemp = new List<int>();
             int s0 = FindTile_0(curV, i, j, 1, 2, listTemp);
@@ -695,6 +794,123 @@ public class Board : MonoBehaviour
                 }
             }
         }
+        //주변 검색 4개
+        {
+            List<int> listTemp = new List<int>();
+            int sameCnt = 0;
+            int s0 = GetTileIdx(i - 1, j - 1);
+            int s1 = GetTileIdx(i - 1, j);
+            int s2 = GetTileIdx(i - 1, j + 1);
+            int s3 = GetTileIdx(i , j - 1);
+            int s5 = GetTileIdx(i , j + 1);
+            int s6 = GetTileIdx(i + 1, j - 1);
+            int s7 = GetTileIdx(i + 1, j );
+            int s8 = GetTileIdx(i + 1, j + 1);
+            if (s0 == curV)
+            {
+                sameCnt++;
+                listTemp.Add(cur - _iSize - 1);
+            }
+            if (s1 == curV)
+            {
+                sameCnt++;
+                listTemp.Add(cur - _iSize);
+            }
+            if (s2 == curV)
+            {
+                sameCnt++;
+                listTemp.Add(cur - _iSize + 1);
+            }
+            if (s3 == curV)
+            {
+                sameCnt++;
+                listTemp.Add(cur - 1);
+            }
+            if (s5 == curV)
+            {
+                sameCnt++;
+                listTemp.Add(cur + 1);
+            }
+            if (s6 == curV)
+            {
+                sameCnt++;
+                listTemp.Add(cur + _iSize - 1);
+            }
+            if (s7 == curV)
+            {
+                sameCnt++;
+                listTemp.Add(cur + _iSize);
+            }
+            if (s8 == curV)
+            {
+                sameCnt++;
+                listTemp.Add(cur + _iSize + 1);
+            }
+            if (sameCnt >= 3)
+            {
+                result += sameCnt + 1;
+                foreach (int one in listTemp)
+                {
+                    AddPangTile(one);
+                }
+            }
+            else
+            {
+                // 0부터 8까지 못 찾았을경우 추가 검사
+                if (s0 == curV)
+                {
+                    if (s1 == curV)
+                    {
+                        int s0_1 = GetTileIdx(i - 2, j - 1);
+                        if (s0_1 == curV)
+                        {
+                            AddPangTile(cur - _iSize - 1);
+                            AddPangTile(cur - _iSize);
+                            AddPangTile(cur - _iSize * 2 - 1);
+                            result += 4;
+                        }
+                    }
+                    else if (s3 == curV)
+                    {
+                        int s3_0 = GetTileIdx(i - 1, j - 2);
+                        if (s3_0 == curV)
+                        {
+                            AddPangTile(cur - _iSize - 1);
+                            AddPangTile(cur - 1);
+                            AddPangTile(cur - _iSize - 2);
+                            result += 4;
+                        }
+                    }
+                }
+                if(s8 == curV)
+                {
+                    if (s5 == curV)
+                    {
+                        int s8_5 = GetTileIdx(i + 1, j + 2);
+                        if (s8_5 == curV)
+                        {
+                            AddPangTile(cur + _iSize + 1);
+                            AddPangTile(cur + 1);
+                            AddPangTile(cur + _iSize + 2);
+                            result += 4;
+                        }
+                    }
+                    else if(s7 == curV)
+                    {
+                        int s8_7 = GetTileIdx(i + 2, j + 1);
+                        if (s8_7 == curV)
+                        {
+                            AddPangTile(cur + _iSize + 1);
+                            AddPangTile(cur + _iSize);
+                            AddPangTile(cur + _iSize * 2 + 1);
+                            result += 4;
+                        }
+                    }
+                }
+            }
+
+        }
+
                 
 
         if ( result > 2 )
@@ -883,16 +1099,27 @@ public class Board : MonoBehaviour
     {
         _listMoveTiles.Clear();
     }
-    void AddMoveTile(int cur)
+    public void AddMoveTile(int cur)
     {
         if (_listMoveTiles.Contains(cur) == false)
             _listMoveTiles.Add(cur);
     }
 
-    void AddPangTile(int cur )
+    public void AddPangTile(int cur )
     {
         Debug.Log("add pang tile : " + cur);
         if (_listPangTiles.Contains(cur) == false)
             _listPangTiles.Add(cur);
+    }
+
+    void AddTopTile(int cur)
+    {
+        if (_listTopTiles.Contains(cur) == false)
+            _listTopTiles.Add(cur);
+    }
+    public void AddWaitingTile(int cur)
+    {
+        if (_listWaitingTiles.Contains(cur) == false)
+            _listWaitingTiles.Add(cur);
     }
 }

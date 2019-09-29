@@ -78,7 +78,7 @@
                 vec3 d=vec3(0, 0, 0);
                 float t=iTime*.1,e=length(o),k=o.y+o.x;
                 float l,r,a;
-                for(int i=0;i<40;i++)
+                for(int i=0;i<20;i++)
                 {
                     a = float(i);
                     r = fract(sin(a*9.7)) * 0.8;

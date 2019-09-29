@@ -44,14 +44,14 @@
             #define fract frac
             #define mix lerp
             
-            static const int NUM_STEPS = 3;
+            static const int NUM_STEPS = 2; //3
             static const float PI      = 3.141592;
             static const float EPSILON = 1e-3;
             #define EPSILON_NRM (0.1 / iResolution.x)
 
             // sea
-            static const int ITER_GEOMETRY = 3;
-            static const int ITER_FRAGMENT = 5;
+            static const int ITER_GEOMETRY = 2; //3
+            static const int ITER_FRAGMENT = 4; //5
             static const float SEA_HEIGHT = 0.6;
             static const float SEA_CHOPPY = 4.0;
             static const float SEA_SPEED = 2.3;

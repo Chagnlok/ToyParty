@@ -72,6 +72,7 @@
     <Compile Include="Assets\Demigiant\DOTween\Modules\DOTweenModuleUtils.cs" />
     <Compile Include="Assets\Scripts\Board.cs" />
     <Compile Include="Assets\Scripts\GameMng.cs" />
+    <Compile Include="Assets\Scripts\PangEff.cs" />
     <Compile Include="Assets\Scripts\Tile.cs" />
     <None Include="Assets\Shader\BlurryCircles.shader" />
     <None Include="Assets\Shader\Flame.shader" />
