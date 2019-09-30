@@ -74,6 +74,7 @@
     <Compile Include="Assets\Scripts\GameMng.cs" />
     <Compile Include="Assets\Scripts\PangEff.cs" />
     <Compile Include="Assets\Scripts\Tile.cs" />
+    <Compile Include="Assets\Scripts\UIMng.cs" />
     <None Include="Assets\Shader\BlurryCircles.shader" />
     <None Include="Assets\Shader\Flame.shader" />
     <None Include="Assets\Shader\AceMaskImg.shader" />
