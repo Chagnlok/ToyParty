@@ -231,7 +231,7 @@ GameObject:
   - component: {fileID: 198273341}
   - component: {fileID: 198273340}
   m_Layer: 5
-  m_Name: X
+  m_Name: Move
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -307,6 +307,7 @@ GameObject:
   - component: {fileID: 493615175}
   - component: {fileID: 493615177}
   - component: {fileID: 493615176}
+  - component: {fileID: 493615178}
   m_Layer: 5
   m_Name: UI
   m_TagString: Untagged
@@ -371,6 +372,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 493615174}
   m_CullTransparentMesh: 0
+--- !u!114 &493615178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 493615174}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c897d8867a3e4434685811d12b793279, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _textQuestCnt: {fileID: 1623051836}
+  _textMove: {fileID: 1005770112}
 --- !u!1 &504016756
 GameObject:
   m_ObjectHideFlags: 0

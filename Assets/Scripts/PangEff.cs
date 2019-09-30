@@ -44,10 +44,11 @@ public class PangEff : MonoBehaviour
                 break;
             case Tile.TILE_IDX.TOP:
                 {
-                    transform.DOMove(new Vector3(-2.3f, 3.4f, 0), 0.6f).SetEase(Ease.InOutBack).OnComplete(()=>
+                    transform.DOMove(new Vector3(-2.1f, 5.2f, 0), 0.6f).SetEase(Ease.InOutBack).OnComplete(()=>
                     {
                         DestroyImmediate(this.gameObject);
                     });
+                    transform.DOScale(Vector3.one / 4, 0.6f);
                 }
                 break;
         }

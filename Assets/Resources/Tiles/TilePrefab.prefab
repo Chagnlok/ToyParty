@@ -66,6 +66,8 @@ MonoBehaviour:
   _isPang: 0
   _isMaker: 0
   _isSelected: 0
+  _isTop: 0
+  _iLife: 1
   _board: {fileID: 0}
 --- !u!58 &1736629587395249073
 CircleCollider2D:
