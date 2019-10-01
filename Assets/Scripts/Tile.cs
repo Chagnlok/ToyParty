@@ -33,6 +33,8 @@ public class Tile : MonoBehaviour
     public bool _isMaker = false; //새로운 타일 나오는 곳
     public bool _isSelected = false; //선택됨
     public bool _isTop = false; //팽이
+    public bool _isBomb = false; //폭탄
+    public bool _isByBomb = false; //폭탄때문에 터진 타일
     public int _iLife = 1;
 
     public Board _board;
@@ -49,7 +51,14 @@ public class Tile : MonoBehaviour
     }
 
     public void SetIdx(int idx)
-    {        
+    {
+        if (_isBomb == true )
+        {
+            //폭탄 초기화 경우 우선 처리
+            SetBomb(idx);
+            return;
+        }
+
         for ( int i = 0; i < _obj.Length; i++)
         {
             if (i == idx)
@@ -68,10 +77,42 @@ public class Tile : MonoBehaviour
             _isTop = false;
         }
 
+        _isBomb = false;
+
         transform.localScale = Vector3.one;
         transform.localRotation = Quaternion.identity;
         //if (idx >= 0)
         //  _isPang = false;
+
+        _idx = idx;
+    }
+
+    public void SetBomb(int idx )
+    {
+        int resIdx = idx + 6;
+        if (idx < 0)
+        {
+            resIdx = idx;
+            _isBomb = false;
+        }
+        else
+        {
+            _isBomb = true;
+        }
+        for (int i = 0; i < _obj.Length; i++)
+        {
+            if (i == resIdx)
+                _obj[i].gameObject.SetActive(true);
+            else
+                _obj[i].gameObject.SetActive(false);
+        }
+        _isTop = false;
+
+        transform.localScale = Vector3.one;
+        transform.localRotation = Quaternion.identity;
+        //transform.localPosition = Vector3.zero;
+
+        
 
         _idx = idx;
     }
@@ -90,9 +131,18 @@ public class Tile : MonoBehaviour
             case TILE_IDX.NORMAL_4:
                 {
                     int newIdx = f._idx;
+                    bool isBomb = f._isBomb;
 
                     f.SetHide();
-                    t.SetIdx(newIdx);
+                    if (isBomb == true)
+                    {
+                        t.SetBomb(newIdx);
+                    }
+                    else
+                    {
+                        t.SetIdx(newIdx);
+                    }
+                    
                     t._isLock = true;
 
                     //t.transform.localPosition = f._pos;
@@ -137,6 +187,7 @@ public class Tile : MonoBehaviour
         transform.localScale = Vector3.one;
         transform.localRotation = Quaternion.identity;
         _isPang = true;
+        _isByBomb = false;
     }
 
     public void Damaged()
@@ -147,9 +198,8 @@ public class Tile : MonoBehaviour
             if (_iLife <= 0)
             {               
                 _board.AddWaitingTile(_cur);
-                
-
                 _board.StartEffs(this, _idx);
+                _isByBomb = false;
 
                 SetIdx(-1);
             }

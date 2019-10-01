@@ -16,6 +16,13 @@ public class Board : MonoBehaviour
     //팡 효과
     public PangEff[] _aniPangEffs;
 
+    //UI
+    public UIMng _uiMng;
+
+
+    int _questCnt = 10;
+    int _moveCnt = 20;
+
     GameObject _prefTile;
 
     public static float _fTimeChangeTile = 0.2f;
@@ -31,7 +38,27 @@ public class Board : MonoBehaviour
     // 4-5 +1
     // 4-6 +n-1 //안됌
     // 4-7 +n
-    // 4-8 +n+1 
+    // 4-8 +n+1
+
+    //------------터치 작업들--------------
+    int _touchDownCur = -1;
+    int _touchEnterCur = -1;
+    int _touchUpCur = -1;
+
+    int _iFirstTileCur = -1;
+    int _iSecondTileCur = -1;
+
+    //움직이는 타일
+    List<int> _listMoveTiles = new List<int>();
+    //터트리는 타일
+    List<int> _listPangTiles = new List<int>();
+    //대기중인 타일
+    List<int> _listWaitingTiles = new List<int>();
+    //팽이 특수 타일
+    List<int> _listTopTiles = new List<int>();
+    //폭탄 타일
+    List<int> _listBombTiles = new List<int>();
+
 
 
     // Start is called before the first frame update
@@ -40,8 +67,33 @@ public class Board : MonoBehaviour
         InitTiles();
     }
 
-    void InitTiles()
+    public void InitTiles()
     {
+        // 모든 리스트 초기화
+        _listMoveTiles.Clear();
+        _listPangTiles.Clear();
+        _listWaitingTiles.Clear();
+        _listTopTiles.Clear();
+        _listBombTiles.Clear();
+
+        // 자식 타일들이 있으면 다 삭제
+        Transform[] childList = GetComponentsInChildren<Transform>(true);
+        if (childList != null)
+        {
+            for (int i = 0; i < childList.Length; i++)
+            {
+                if (childList[i] != transform)
+                    Destroy(childList[i].gameObject);
+            }
+        }
+
+        //ui 초기화
+        _questCnt = 10;
+        _moveCnt = 20;
+
+        _uiMng.SetMoveCnt(_moveCnt);
+        _uiMng.SetQuestCnt(_questCnt);
+
         int totalTilesCnt = _iSize * _iSize;
         _tiles = new Tile[totalTilesCnt];
 
@@ -91,7 +143,7 @@ public class Board : MonoBehaviour
                 y += fOneSize / 2 * j;
                 Vector3 v = new Vector3(x, y, 0.0f);
                 t0.transform.localPosition = Vector3.zero;
-                t0.transform.DOLocalMove(v, 1f);
+                t0.transform.DOLocalMove(v, 0.7f);
 
                 _tiles[cur] = t0;
                 _tiles[cur]._pos = v;
@@ -102,8 +154,7 @@ public class Board : MonoBehaviour
         }
 
         // 초기 스테이즈 설정
-        
-        
+                
         int line = 0;
         for ( int i = 0; i < _iSize; i ++)
         {
@@ -266,48 +317,95 @@ public class Board : MonoBehaviour
         Tile t = _tiles[cur];
 
         int idx = t._idx;
-
+        bool isBomb = t._isBomb;
+        bool isByBomb = t._isByBomb;
         t.SetHide();
 
         StartEffs(t, idx);
+
+        if (isBomb == true)
+        {
+            //폭탄일경우
+            //주변 타일 팡
+            int i = cur / _iSize;
+            int j = cur % _iSize;
+            int s0 = GetTileIdx(i - 1, j - 1);
+            int s1 = GetTileIdx(i - 1, j);
+            int s3 = GetTileIdx(i, j - 1);
+            int s5 = GetTileIdx(i, j + 1);
+            int s7 = GetTileIdx(i + 1, j);
+            int s8 = GetTileIdx(i + 1, j + 1);
+            if (s0 >= 0)
+            {
+                AddPangTile(cur - _iSize - 1, true);
+            }
+            if (s1 >= 0)
+            {
+                AddPangTile(cur - _iSize, true);
+            }
+            if (s3 >= 0)
+            {
+                AddPangTile(cur - 1, true);
+            }
+            if (s5 >= 0)
+            {
+                AddPangTile(cur + 1, true);
+            }
+            if (s7 >= 0)
+            {
+                AddPangTile(cur + _iSize, true);
+            }
+            if (s8 >= 0)
+            {
+                AddPangTile(cur + _iSize + 1, true);
+            }
+        }
+        else if (isByBomb == false)
+        {            
+            //근처 특수 타일 검색
+            int i = cur / _iSize;
+            int j = cur % _iSize;
+            int s0 = GetTileIdx(i - 1, j - 1);
+            int s1 = GetTileIdx(i - 1, j);
+            //int s2 = GetTileIdx(i - 1, j + 1);
+            int s3 = GetTileIdx(i, j - 1);
+            int s5 = GetTileIdx(i, j + 1);
+            //int s6 = GetTileIdx(i + 1, j - 1);
+            int s7 = GetTileIdx(i + 1, j);
+            int s8 = GetTileIdx(i + 1, j + 1);
+
+            //근처에 팽이가 있으면 처리
+            if (s0 == (int)Tile.TILE_IDX.TOP)
+            {
+                AddTopTile(cur - _iSize - 1);
+            }
+            if (s1 == (int)Tile.TILE_IDX.TOP)
+            {
+                AddTopTile(cur - _iSize);
+            }
+            if (s3 == (int)Tile.TILE_IDX.TOP)
+            {
+                AddTopTile(cur - 1);
+            }
+            if (s5 == (int)Tile.TILE_IDX.TOP)
+            {
+                AddTopTile(cur + 1);
+            }
+            if (s7 == (int)Tile.TILE_IDX.TOP)
+            {
+                AddTopTile(cur + _iSize);
+            }
+            if (s8 == (int)Tile.TILE_IDX.TOP)
+            {
+                AddTopTile(cur + _iSize + 1);
+            }
+        }
+        else
+        {
+            Tile tt = _tiles[cur];
+            Debug.Log("---- : " + tt + " :----");
+        }
         
-
-        //근처 특수 타일 검색
-        int i = cur / _iSize;
-        int j = cur % _iSize;
-        int s0 = GetTileIdx(i - 1, j - 1);
-        int s1 = GetTileIdx(i - 1, j);
-        //int s2 = GetTileIdx(i - 1, j + 1);
-        int s3 = GetTileIdx(i, j - 1);
-        int s5 = GetTileIdx(i, j + 1);
-        //int s6 = GetTileIdx(i + 1, j - 1);
-        int s7 = GetTileIdx(i + 1, j);
-        int s8 = GetTileIdx(i + 1, j + 1);
-
-        if (s0 == (int)Tile.TILE_IDX.TOP)
-        {
-            AddTopTile(cur - _iSize - 1);
-        }
-        if (s1 == (int)Tile.TILE_IDX.TOP)
-        {
-            AddTopTile(cur - _iSize);
-        }
-        if (s3 == (int)Tile.TILE_IDX.TOP)
-        {
-            AddTopTile(cur - 1);
-        }
-        if (s5 == (int)Tile.TILE_IDX.TOP)
-        {
-            AddTopTile(cur + 1);
-        }
-        if (s7 == (int)Tile.TILE_IDX.TOP)
-        {
-            AddTopTile(cur + _iSize);
-        }
-        if (s8 == (int)Tile.TILE_IDX.TOP)
-        {
-            AddTopTile(cur + _iSize + 1);
-        }
     }
 
     public void MoveDownAfterPang(int cur)
@@ -412,23 +510,7 @@ public class Board : MonoBehaviour
         //t1.SetHide();
     }
 
-    //------------터치 작업들--------------
-    int _touchDownCur = -1;
-    int _touchEnterCur = -1;
-    int _touchUpCur = -1;
-
-    int _iFirstTileCur = -1;
-    int _iSecondTileCur = -1;
-
-    //움직이는 타일
-    List<int> _listMoveTiles = new List<int>();
-    //터트리는 타일
-    List<int> _listPangTiles = new List<int>();
-    //대기중인 타일
-    List<int> _listWaitingTiles = new List<int>();
-    //팽이 특수 타일
-    List<int> _listTopTiles = new List<int>();
-
+    
 
     //터치
     public void OnTouchDown(int cur)
@@ -502,11 +584,10 @@ public class Board : MonoBehaviour
                 //Debug.Log("---- " + _touchEnterCur);
                 Tile t = _tiles[_touchEnterCur];
                 t.SetSelect(true);
-                
+
+                // 선택한 두 타일 바꾸기
                 SwapTiles(_iFirstTileCur, _touchEnterCur);
-
                 
-
                 _iSecondTileCur = _touchEnterCur;
                 _touchEnterCur = -1;
                 _touchDownCur = -1;
@@ -533,6 +614,7 @@ public class Board : MonoBehaviour
 
             _touchUpCur = -1;
         }
+                
 
         //타일 터트리기
         while (_listPangTiles.Count > 0)
@@ -554,14 +636,24 @@ public class Board : MonoBehaviour
 
         }
 
+        //이동 후 만들어지는 폭탄 생성
+        foreach(int one in _listBombTiles)
+        {
+            _tiles[one].SetBomb(_tiles[one]._idx);
+        }
+        _listBombTiles.Clear();
+
         //특수 타일 - 팽이
         if ( _listTopTiles.Count > 0)
         {
             foreach (int one in _listTopTiles)
             {
                 _tiles[one].Damaged();
+                if (_tiles[one]._iLife <= 0 && _questCnt > 0)
+                    _questCnt--;
             }
             _listTopTiles.Clear();
+            _uiMng.SetQuestCnt(_questCnt);
         }
             
         if (_listWaitingTiles.Count > 0)
@@ -584,9 +676,26 @@ public class Board : MonoBehaviour
         if (_listWaitingTiles.Count < 1)
         {
             FindPangFromList();
+
+            
+            
+        }
+
+        if(_listPangTiles.Count < 1)
+        {
+            if ( _questCnt <= 0 )
+            {
+                _uiMng.SetEndUI(true);
+            }
+            else if (_moveCnt <= 0 )
+            {
+                _uiMng.SetEndUI(false);
+            }
+
         }
 
         
+
     }
 
     // 이동 가능한 위치인지 검사 
@@ -648,48 +757,113 @@ public class Board : MonoBehaviour
             t.SetSelect(false);
             f.SetSelect(false);
 
-            int temp = t._idx;
-            t.SetIdx(f._idx);
-            t.transform.localPosition = t._pos;
-            f.SetIdx(temp);
-            f.transform.localPosition = f._pos;
-
-
-            // 교체 후 팡를 것 찾아 검사
-            ClearMoveTiles();
-            AddMoveTile(cur1);
-            AddMoveTile(cur2);
-            
-
-            _listPangTiles.Clear();
-
-            int result = FindPangFromList();
-            Debug.Log(" pang cnt : " + result);
-            if (result == 0)
+            //선택된 타일 두개가 폭탄일 경우
+            if ( t._isBomb == true && f._isBomb == true)
             {
-                //바뀐 내용이 없으면 다시 타일 복구
-                t.transform.DOLocalMove(f._pos, _fTimeChangeTile);
-                f.transform.DOLocalMove(t._pos, _fTimeChangeTile).OnComplete(() =>
-                {
-                    temp = t._idx;
-                    t.SetIdx(f._idx);
-                    t.transform.localPosition = t._pos;
-                    f.SetIdx(temp);
-                    f.transform.localPosition = f._pos;
-                });
+                AddPangTile(t._cur);
+                AddPangTile(f._cur);
+
+                if (_moveCnt > 0)
+                    _moveCnt--;
+                _uiMng.SetMoveCnt(_moveCnt);
             }
             else
             {
-                //팡이 있으면 팡처리
-                //string s = "---";
-                //for ( int i = 0; i < _listPangTiles.Count; i ++)
-                //{
-                //    int v = _listPangTiles[i];
-                //    s += v + " ";
-                //}
-                //Debug.Log(s);
+                int temp = t._idx;
+                bool isBomb = t._isBomb;
+                if (f._isBomb == true)
+                {
+                    t.SetBomb(f._idx);
+                }
+                else
+                {
+                    t._isBomb = false;
+                    t.SetIdx(f._idx);
+                }
+                t.transform.localPosition = t._pos;
+
+                if (isBomb == true)
+                {
+                    f.SetBomb(temp);
+                }
+                else
+                {
+                    f._isBomb = false;
+                    f.SetIdx(temp);
+                }
+                f.transform.localPosition = f._pos;
                 
+                // 교체 후 팡를 것 찾아 검사
+                ClearMoveTiles();
+                AddMoveTile(cur1);
+                AddMoveTile(cur2);
+
+                _listPangTiles.Clear();
+
+                int result = FindPangFromList();
+                Debug.Log(" pang cnt : " + result);
+                if (result == 0)
+                {
+                    //바뀐 내용이 없으면 다시 타일 복구
+                    t.transform.DOLocalMove(f._pos, _fTimeChangeTile);
+                    f.transform.DOLocalMove(t._pos, _fTimeChangeTile).OnComplete(() =>
+                    {
+                        temp = t._idx;
+                        isBomb = t._isBomb;
+                        if (f._isBomb == true)
+                        {
+                            t.SetBomb(f._idx);
+                        }
+                        else
+                        {
+                            t._isBomb = false;
+                            t.SetIdx(f._idx);                            
+                        }                        
+                        t.transform.localPosition = t._pos;
+
+                        if (isBomb == true)
+                        {
+                            f.SetBomb(temp);
+                        }
+                        else
+                        {
+                            f._isBomb = false;
+                            f.SetIdx(temp);                            
+                        }
+                        f.transform.localPosition = f._pos;
+                    });
+                }
+                else
+                {
+                    //이동한 두개 타일 중
+                    //터져야 할 타일 중에 폭탄이 있을 경우 우선처리
+                    if (t._isBomb == true) 
+                    {
+                        if (_listBombTiles.Contains(t._cur) == true)
+                        {
+                            Pang(t._cur);
+                            //_listBombTiles.Remove(t._cur);
+                            //AddPangTile(t._cur);
+                        }
+                    }
+                    if (f._isBomb == true)
+                    {
+                        if (_listBombTiles.Contains(f._cur) == true)
+                        {
+                            Pang(f._cur);
+                            _listBombTiles.Remove(f._cur);
+                            AddPangTile(f._cur);
+                        }
+                    }
+                        
+                    if (_moveCnt > 0)
+                        _moveCnt--;
+                    _uiMng.SetMoveCnt(_moveCnt);
+
+                }
             }
+
+            
         });
     }
 
@@ -702,7 +876,17 @@ public class Board : MonoBehaviour
             int cur = _listMoveTiles[0];
             _listMoveTiles.Remove(cur);
 
-            result += FindPang(cur);
+            int r = FindPang(cur);
+            if (r > 3)
+            {
+               
+
+                //특수 타일로 변경
+                DelPangTile(cur);
+                AddBombTile(cur);
+                //_tiles[cur].SetBomb(_tiles[cur]._idx);
+            }
+            result += r;
         }
         
         
@@ -722,7 +906,14 @@ public class Board : MonoBehaviour
             s += cur + ", ";
             _listMoveTiles.Remove(cur);
 
-            result += FindPang(cur);
+            int r = FindPang(cur);
+            if (r > 3)
+            {
+                //특수 타일로 변경
+                DelPangTile(cur);
+            }
+            result += r;
+            
         }
 
         if (cnt != 0)
@@ -763,7 +954,7 @@ public class Board : MonoBehaviour
             int s8 = FindTile_8(curV, i, j, 1, 2, listTemp);
             if ( s0 + s8 >= 4)
             {
-                result += s0 + s8;
+                result += s0 + s8 - 1;
                 foreach(int one in listTemp)
                 {
                     AddPangTile(one);
@@ -775,7 +966,7 @@ public class Board : MonoBehaviour
             int s7 = FindTile_7(curV, i, j, 1, 2, listTemp);
             if (s1 + s7 >= 4)
             {
-                result += s1 + s7;
+                result += s1 + s7 - 1;
                 foreach (int one in listTemp)
                 {
                     AddPangTile(one);
@@ -787,7 +978,7 @@ public class Board : MonoBehaviour
             int s5 = FindTile_5(curV, i, j, 1, 2, listTemp);
             if (s3 + s5 >= 4)
             {
-                result += s3 + s5;
+                result += s3 + s5 - 1;
                 foreach (int one in listTemp)
                 {
                     AddPangTile(one);
@@ -816,11 +1007,13 @@ public class Board : MonoBehaviour
                 sameCnt++;
                 listTemp.Add(cur - _iSize);
             }
+            /*
             if (s2 == curV)
             {
                 sameCnt++;
                 listTemp.Add(cur - _iSize + 1);
             }
+            */
             if (s3 == curV)
             {
                 sameCnt++;
@@ -831,11 +1024,13 @@ public class Board : MonoBehaviour
                 sameCnt++;
                 listTemp.Add(cur + 1);
             }
+            /*
             if (s6 == curV)
             {
                 sameCnt++;
                 listTemp.Add(cur + _iSize - 1);
             }
+            */
             if (s7 == curV)
             {
                 sameCnt++;
@@ -903,6 +1098,32 @@ public class Board : MonoBehaviour
                             AddPangTile(cur + _iSize + 1);
                             AddPangTile(cur + _iSize);
                             AddPangTile(cur + _iSize * 2 + 1);
+                            result += 4;
+                        }
+                    }
+                }
+                if (s1 == curV)
+                {
+                    if (s5 == curV)
+                    {
+                        if (s2 == curV)
+                        {
+                            AddPangTile(cur - _iSize);
+                            AddPangTile(cur + 1);
+                            AddPangTile(cur - _iSize + 1);
+                            result += 4;
+                        }
+                    }
+                }
+                if (s3 == curV)
+                {
+                    if (s6 == curV)
+                    {
+                        if (s7 == curV)
+                        {
+                            AddPangTile(cur - 1);
+                            AddPangTile(cur + _iSize - 1);
+                            AddPangTile(cur + _iSize);
                             result += 4;
                         }
                     }
@@ -1105,11 +1326,41 @@ public class Board : MonoBehaviour
             _listMoveTiles.Add(cur);
     }
 
-    public void AddPangTile(int cur )
+    public void AddPangTile(int cur , bool byBomb = false)
     {
-        Debug.Log("add pang tile : " + cur);
-        if (_listPangTiles.Contains(cur) == false)
-            _listPangTiles.Add(cur);
+        //Debug.Log("add pang tile : " + cur);
+        Tile t = _tiles[cur];
+        if (t._isTop == true)
+        {
+            AddTopTile(cur);
+        }
+        else
+        {
+            if ( byBomb == false)
+            {
+                if (_listPangTiles.Contains(cur) == false)
+                    _listPangTiles.Add(cur);
+
+                t._isByBomb = false;
+            }
+            else
+            {
+                if (_listPangTiles.Contains(cur) == false)
+                {
+                    t._isByBomb = true;
+                    _listPangTiles.Add(cur);
+                }
+            }
+            
+        }
+        
+    }
+
+    public void DelPangTile(int cur)
+    {
+        Debug.Log("---------" + "del pang tile : " + cur);
+        if (_listPangTiles.Contains(cur) == true)
+            _listPangTiles.Remove(cur);
     }
 
     void AddTopTile(int cur)
@@ -1121,5 +1372,12 @@ public class Board : MonoBehaviour
     {
         if (_listWaitingTiles.Contains(cur) == false)
             _listWaitingTiles.Add(cur);
+    }
+    public void AddBombTile(int cur)
+    {
+        if ( _listBombTiles.Contains(cur) == false)
+        {
+            _listBombTiles.Add(cur);
+        }
     }
 }
