@@ -4,6 +4,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using Facebook.Unity;
 
+/*
+
+    keytool -exportcert -alias toyparty -keystore /projects/ToyParty/ToyParty/android.keystore | openssl sha1 -binary | openssl base64
+ 
+ */
+
 public class UIMng : MonoBehaviour
 {
     public Text _textQuestCnt;
@@ -133,23 +139,20 @@ public class UIMng : MonoBehaviour
     {
         if (FB.IsLoggedIn)
         {
-            // AccessToken class will have session details
             var aToken = Facebook.Unity.AccessToken.CurrentAccessToken;
-            // Print current access token's User ID
-            Debug.Log(aToken.UserId);
-            // Print current access token's granted permissions
-            foreach (string perm in aToken.Permissions)
-            {
-                Debug.Log(perm);
-            }
+            //Debug.Log(aToken.UserId);
+            //foreach (string perm in aToken.Permissions)
+            //{
+            //    Debug.Log(perm);
+            //}
+                        
 
             _user.text = aToken.UserId;
 
             _objLogin.SetActive(false);
             _objInGameMenu.SetActive(true);
             _board.gameObject.SetActive(true);
-                        
-
+            
             _board.InitTiles();
         }
         else

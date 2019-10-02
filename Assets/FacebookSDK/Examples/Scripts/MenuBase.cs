@@ -66,6 +66,7 @@ namespace Facebook.Unity.Example
             {
                 this.Status = "Success - Check log for details";
                 this.LastResponse = "Success Response:\n" + result.RawResult;
+                
             }
             else
             {
