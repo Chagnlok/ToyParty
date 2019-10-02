@@ -235,6 +235,7 @@ public class Board : MonoBehaviour
 
         int v0 = GetTileIdx(i - 1, j - 1);
         int v0_0 = GetTileIdx(i - 2, j - 2);
+        int v0_1 = GetTileIdx(i - 2, j - 1);
 
         int v1 = GetTileIdx(i - 1, j );
         int v1_1 = GetTileIdx(i - 2, j);
@@ -273,6 +274,15 @@ public class Board : MonoBehaviour
         if ( v0 >= 0 && v1 >= 0 && v3 >= 0)
         {
             if ( v0 == v1 && v1 == v3  )
+            {
+                if (usedIdx.Contains(v0) == false)
+                    usedIdx.Add(v0);
+            }
+        }
+
+        if (v0 >= 0 && v1 >= 0 && v0_1 >= 0)
+        {
+            if (v0 == v1 && v1 == v0_1)
             {
                 if (usedIdx.Contains(v0) == false)
                     usedIdx.Add(v0);
