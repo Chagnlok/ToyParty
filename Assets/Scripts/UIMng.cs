@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Facebook.Unity;
 
 public class UIMng : MonoBehaviour
 {
@@ -15,7 +16,23 @@ public class UIMng : MonoBehaviour
     public Board _board;
 
     public Text _textResult;
+    public Text _user;
 
+    void Awake()
+    {
+        if (!FB.IsInitialized)
+        {
+            // Initialize the Facebook SDK
+            FB.Init(InitCallback, OnHideUnity);
+        }
+        else
+        {
+            // Already initialized, signal an app activation App Event
+            FB.ActivateApp();
+        }
+    }
+
+    
 
     private void Start()
     {
@@ -52,6 +69,8 @@ public class UIMng : MonoBehaviour
 
     public void OnClickFaceBook()
     {
+        var perms = new List<string>() { "public_profile" };
+        FB.LogInWithReadPermissions(perms, AuthCallback);
 
     }
     public void OnClickGuest()
@@ -59,6 +78,8 @@ public class UIMng : MonoBehaviour
         _objLogin.SetActive(false);
         _objInGameMenu.SetActive(true);
         _board.gameObject.SetActive(true);
+
+        _user.text = "Guest";
 
         _board.InitTiles();
     }
@@ -75,5 +96,65 @@ public class UIMng : MonoBehaviour
         _objInGameMenu.SetActive(false);
         _objEndUI.SetActive(false);
         _board.gameObject.SetActive(false);
+    }
+
+    //페이스북
+
+    private void InitCallback()
+    {
+        if (FB.IsInitialized)
+        {
+            // Signal an app activation App Event
+            FB.ActivateApp();
+            // Continue with Facebook SDK
+            // ...
+        }
+        else
+        {
+            Debug.Log("Failed to Initialize the Facebook SDK");
+        }
+    }
+
+    private void OnHideUnity(bool isGameShown)
+    {
+        if (!isGameShown)
+        {
+            // Pause the game - we will need to hide
+            Time.timeScale = 0;
+        }
+        else
+        {
+            // Resume the game - we're getting focus again
+            Time.timeScale = 1;
+        }
+    }
+
+    private void AuthCallback(ILoginResult result)
+    {
+        if (FB.IsLoggedIn)
+        {
+            // AccessToken class will have session details
+            var aToken = Facebook.Unity.AccessToken.CurrentAccessToken;
+            // Print current access token's User ID
+            Debug.Log(aToken.UserId);
+            // Print current access token's granted permissions
+            foreach (string perm in aToken.Permissions)
+            {
+                Debug.Log(perm);
+            }
+
+            _user.text = aToken.UserId;
+
+            _objLogin.SetActive(false);
+            _objInGameMenu.SetActive(true);
+            _board.gameObject.SetActive(true);
+                        
+
+            _board.InitTiles();
+        }
+        else
+        {
+            Debug.Log("User cancelled login");
+        }
     }
 }
